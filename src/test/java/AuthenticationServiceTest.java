@@ -68,11 +68,12 @@ public class AuthenticationServiceTest {
     @Test
     public void getUser_CheckErrorMessage() throws Exception {
         String expectedMessage = "Database down";
+        int databaseDownCode = 500;
         when(mockUserDao.getUserOrNull(EMAIL, PASSWORD)).thenThrow(new DatabaseDownException());
 
         Status<Boolean> userExistsStatus = authenticationService.checkUser(EMAIL, PASSWORD);
 
         assert userExistsStatus.getError().getMessage().equals(expectedMessage);
-        assert userExistsStatus.getError().getCode() == 500;
+        assert userExistsStatus.getError().getCode() == databaseDownCode;
     }
 }
