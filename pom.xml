@@ -17,6 +17,20 @@
                     <target>7</target>
                 </configuration>
             </plugin>
+
+            <!-- force sure fire to use junit instead of testng -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.10</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit47</artifactId>
+                        <version>2.10</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
         </plugins>
     </build>
 
