@@ -8,7 +8,6 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,9 +25,7 @@ public class AuthenticationServiceTest {
     private AuthenticationService authenticationService;
 
     @Before
-    public void setUp() throws DatabaseDownException {
-        when(mockUserDao.getUserOrNull(anyString(), anyString())).thenReturn(null);
-        when(mockUserDao.getUserOrNull(EMAIL, PASSWORD)).thenReturn(USER);
+    public void setUp() {
         authenticationService = new AuthenticationService(mockUserDao);
     }
 
@@ -40,6 +37,8 @@ public class AuthenticationServiceTest {
 
     @Test
     public void getUser_ValidCredentials() throws DatabaseDownException {
+        when(mockUserDao.getUserOrNull(EMAIL, PASSWORD)).thenReturn(USER);
+
         Status<Boolean> userExistsStatus = authenticationService.checkUser(EMAIL, PASSWORD);
 
         verify(mockUserDao).getUserOrNull(EMAIL, PASSWORD);
@@ -47,8 +46,40 @@ public class AuthenticationServiceTest {
     }
 
     @Test
+    public void authorization_ValidAuthorizedCredentials() throws DatabaseDownException {
+        when(mockUserDao.getKey(EMAIL, PASSWORD)).thenReturn(EMAIL + PASSWORD);
+
+        Status<AuthorizationResponse> userExistsStatus = authenticationService.authorization(EMAIL, PASSWORD);
+
+        verify(mockUserDao).getKey(EMAIL, PASSWORD);
+        assert userExistsStatus.getData().isAuthorized();
+        assert userExistsStatus.getData().getMessage().equals("Authorized");
+    }
+
+    @Test
+    public void authorization_InvalidCredentials() throws DatabaseDownException {
+        when(mockUserDao.getKey(EMAIL, PASSWORD)).thenReturn("some completely other key");
+
+        Status<AuthorizationResponse> userExistsStatus = authenticationService.authorization(EMAIL, PASSWORD);
+
+        verify(mockUserDao).getKey(EMAIL, PASSWORD);
+        assert !userExistsStatus.getData().isAuthorized();
+        assert userExistsStatus.getData().getMessage().equals("Keys did not match");
+    }
+
+    @Test
+    public void authorization_EmptyCredentials() {
+        Status<AuthorizationResponse> userExistsStatus = authenticationService.authorization("", "");
+
+        assert !userExistsStatus.getData().isAuthorized();
+        assert userExistsStatus.getData().getMessage().equals("Please provide non-empty email and password");
+    }
+
+    @Test
     public void getUser_InvalidEmail() throws DatabaseDownException {
         String invalidEmail = "invalid@email.com";
+        when(mockUserDao.getUserOrNull(invalidEmail, PASSWORD)).thenReturn(null);
+
         Status<Boolean> userExistsStatus = authenticationService.checkUser(invalidEmail, PASSWORD);
 
         verify(mockUserDao).getUserOrNull(invalidEmail, PASSWORD);
@@ -59,6 +90,8 @@ public class AuthenticationServiceTest {
     public void getUser_EmptyInputs() throws DatabaseDownException {
         String email = "";
         String password = "";
+        when(mockUserDao.getUserOrNull(email, password)).thenReturn(null);
+
         Status<Boolean> userExistsStatus = authenticationService.checkUser(email, password);
 
         verify(mockUserDao).getUserOrNull(email, password);
